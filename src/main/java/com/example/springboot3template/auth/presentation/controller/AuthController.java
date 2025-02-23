@@ -36,9 +36,5 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-//    @GetMapping("/user/me")
-//    public ResponseEntity<ReadUserInfo> readMyInfo(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-//        ReadUserInfo myInfo = authService.readMyInfo(userDetails);
-//        return ResponseEntity.ok(myInfo);  // 현재 인증된 사용자 정보 반환
-//    }
+
 }

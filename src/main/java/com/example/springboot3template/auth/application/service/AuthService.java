@@ -77,17 +77,6 @@ public class AuthService {
         jwtProvider.addJwtToCookie(token, res);
     }
 
-//    @Transactional(readOnly = true)
-//    public ReadUserInfo readMyInfo(UserDetailsImpl userDetails) {
-//        Long userId = userDetails.getUser().getUserId();
-//
-//        User user = userRepository.findById(userId)
-//            .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
-//
-//        ReadUserInfo readMyInfo = new ReadUserInfo();
-//        readMyInfo.setUsername(user.getUsername());
-//
-//        return readMyInfo;
-//    }
+
 
 }
