@@ -10,9 +10,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Getter
 @Table(name = "user_info_tb")
 @NoArgsConstructor
 @AllArgsConstructor
@@ -32,11 +34,5 @@ public class User {
     @Column
     @Enumerated(EnumType.STRING)
     private UserRoleEnum role;
-
-//    public User(String username, String password, UserRoleEnum userRoleEnum) {
-//        this.username = username;
-//        this.password = password;
-//        this.userRoleEnum = userRoleEnum;
-//    }
 
 }
