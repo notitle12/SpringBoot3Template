@@ -2,11 +2,11 @@ package com.example.springboot3template.common.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -17,15 +17,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity // Spring Security 지원을 가능하게 함
+//@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
-
-//    private final AuthenticationConfiguration authenticationConfiguration;
-//    private final JwtProvider jwtProvider;
-//    private final UserRepository userRepository;
-//    private final UserDetailsServiceImpl userDetailsService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
@@ -35,14 +32,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public FilterRegistrationBean<JwtFilter> jwtFilterRegistration() {
-        FilterRegistrationBean<JwtFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(jwtFilter);
-        registrationBean.addUrlPatterns("/api/v1/*"); // 필터가 적용될 URL 패턴 설정
-        return registrationBean;
     }
 
     @Bean
@@ -68,7 +57,6 @@ public class SecurityConfig {
 
         // 필터 추가 (JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가)
         http.addFilterBefore(
-//            new JwtFilter(userDetailsService),
             jwtFilter,
             UsernamePasswordAuthenticationFilter.class
         );
