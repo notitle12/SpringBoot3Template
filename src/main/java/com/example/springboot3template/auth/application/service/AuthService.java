@@ -2,16 +2,13 @@ package com.example.springboot3template.auth.application.service;
 
 import com.example.springboot3template.auth.application.dto.req.LoginReq;
 import com.example.springboot3template.auth.application.dto.req.SignUpReq;
-import com.example.springboot3template.auth.application.dto.res.ReadUserInfo;
 import com.example.springboot3template.auth.domain.entity.User;
 import com.example.springboot3template.auth.domain.entity.UserRoleEnum;
 import com.example.springboot3template.auth.infrastructure.repository.UserRepository;
 import com.example.springboot3template.common.security.JwtProvider;
-import com.example.springboot3template.common.security.UserDetailsImpl;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +24,7 @@ public class AuthService {
 
     private final PasswordEncoder passwordEncoder;
 
+    // 회원가입
     @Transactional
     public void signUp(SignUpReq req) {
         String username = req.getUsername();
@@ -57,6 +55,7 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    // 로그인
     @Transactional
     public void login(LoginReq req, HttpServletResponse res) {
         String username = req.getUsername();
@@ -76,7 +75,5 @@ public class AuthService {
         String token = jwtProvider.createToken(user.getUsername(), user.getRole());
         jwtProvider.addJwtToCookie(token, res);
     }
-
-
 
 }

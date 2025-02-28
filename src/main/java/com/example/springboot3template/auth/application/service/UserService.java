@@ -14,6 +14,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    // 본인 정보 조회
     @Transactional(readOnly = true)
     public ReadUserInfo getMyInfo(UserDetailsImpl userDetails) {
         Long userId = userDetails.getUser().getUserId();

@@ -134,7 +134,7 @@ public class JwtFilter implements Filter {
 
     private SecretKey getSecretKey() {
         if (secretKey == null || secretKey.isEmpty()) {
-            throw new IllegalStateException("Secret key is not set, in JwtAuthenticationFilter");
+            throw new IllegalStateException("JwtFilter에 secretKey가 null입니다.");
         }
         return Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretKey));
     }
