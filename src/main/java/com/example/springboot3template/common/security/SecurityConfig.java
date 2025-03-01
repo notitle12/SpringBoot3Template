@@ -24,6 +24,12 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
+    // ✅ CustomSecurityExpression을 직접 Bean으로 등록
+    @Bean("customSecurity")
+    public CustomSecurityExpression customSecurityExpression() {
+        return new CustomSecurityExpression();
+    }
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();

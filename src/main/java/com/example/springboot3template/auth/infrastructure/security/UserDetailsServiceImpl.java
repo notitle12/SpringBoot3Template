@@ -1,4 +1,4 @@
-package com.example.springboot3template.common.security;
+package com.example.springboot3template.auth.infrastructure.security;
 
 import com.example.springboot3template.auth.domain.entity.User;
 import com.example.springboot3template.auth.infrastructure.repository.UserRepository;

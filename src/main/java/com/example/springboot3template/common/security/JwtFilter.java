@@ -50,10 +50,11 @@ public class JwtFilter implements Filter {
             chain.doFilter(req, res); // 다음 Filter 로 이동
             return;
         }
-            // 나머지 API 요청은 인증 처리 진행
-            // 토큰 확인
-            String token = getTokenFromRequest(req);
-            log.info("요청에서 추출된 토큰: {}", token);
+
+        // 나머지 API 요청은 인증 처리 진행
+        // 토큰 확인
+        String token = getTokenFromRequest(req);
+        log.info("요청에서 추출된 토큰: {}", token);
 
         if (StringUtils.hasText(token)) {
             SecretKey key = getSecretKey();
@@ -62,16 +63,27 @@ public class JwtFilter implements Filter {
                 throw new IllegalArgumentException("Token Error");
             }
 
-            Claims info = getUserInfoFromToken(token, key);
-            String username = info.getSubject();
-            log.info("토큰에서 추출된 사용자 이름: {}", username);
+//            Claims info = getUserInfoFromToken(token, key);
+//            String username = info.getSubject();
+//            log.info("토큰에서 추출된 사용자 이름: {}", username);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            UsernamePasswordAuthenticationToken authentication =
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            // JWT에서 사용자 정보 추출
+            Claims claims = getUserInfoFromToken(token, key);
+            String username = claims.getSubject();
+            String role = claims.get("auth", String.class);
 
-            log.info("인증 완료: {}", SecurityContextHolder.getContext().getAuthentication());
+            log.info("JWT에서 추출된 사용자 정보 - username: {}, role: {}", username, role);
+
+            // 사용자 정보를 HTTP 헤더에 추가
+            res.setHeader("X-User-Id", username);
+            res.setHeader("X-User-Role", role);
+
+//            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+//            UsernamePasswordAuthenticationToken authentication =
+//                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+//            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+//            log.info("인증 완료: {}", SecurityContextHolder.getContext().getAuthentication());
         } else {
             log.warn("토큰이 요청에 포함되지 않았습니다.");
         }
