@@ -28,4 +28,15 @@ public class UserService {
         return getMyInfo;
     }
 
+    @Transactional(readOnly = true)
+    public GetUserInfoRes getUserInfo(Long userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
+
+        GetUserInfoRes userInfo = new GetUserInfoRes();
+        userInfo.setUsername(user.getUsername());
+
+        return userInfo;
+    }
+
 }
