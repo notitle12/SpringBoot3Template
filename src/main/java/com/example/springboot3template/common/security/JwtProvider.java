@@ -45,7 +45,6 @@ public class JwtProvider {
     public String createToken(String username, UserRoleEnum role) {
         Date date = new Date();
         String auth = role.getAuthority();
-//        String auth = "ROLE_" + role.getAuthority();
 
         return BEARER_PREFIX +
             Jwts.builder()

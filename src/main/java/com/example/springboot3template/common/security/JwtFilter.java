@@ -63,10 +63,6 @@ public class JwtFilter implements Filter {
                 throw new IllegalArgumentException("Token Error");
             }
 
-//            Claims info = getUserInfoFromToken(token, key);
-//            String username = info.getSubject();
-//            log.info("토큰에서 추출된 사용자 이름: {}", username);
-
             // JWT에서 사용자 정보 추출
             Claims claims = getUserInfoFromToken(token, key);
             String username = claims.getSubject();
@@ -74,16 +70,12 @@ public class JwtFilter implements Filter {
 
             log.info("JWT에서 추출된 사용자 정보 - username: {}, role: {}", username, role);
 
-            // 사용자 정보를 HTTP 헤더에 추가
-            res.setHeader("X-User-Id", username);
-            res.setHeader("X-User-Role", role);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
-//            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-//            UsernamePasswordAuthenticationToken authentication =
-//                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-//            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-//            log.info("인증 완료: {}", SecurityContextHolder.getContext().getAuthentication());
+            log.info("인증 완료: {}", SecurityContextHolder.getContext().getAuthentication());
         } else {
             log.warn("토큰이 요청에 포함되지 않았습니다.");
         }

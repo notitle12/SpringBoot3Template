@@ -15,21 +15,10 @@ public class UserService {
     private final UserRepository userRepository;
 
     // 본인 정보 조회
-//    @Transactional(readOnly = true)
-//    public GetUserInfoRes getMyInfo(UserDetailsImpl userDetails) {
-//        Long userId = userDetails.getUser().getUserId();
-//
-//        User user = userRepository.findById(userId)
-//            .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
-//
-//        GetUserInfoRes getMyInfo = new GetUserInfoRes();
-//        getMyInfo.setUsername(user.getUsername());
-//
-//        return getMyInfo;
-//    }
-    // 본인 정보 조회
     @Transactional(readOnly = true)
-    public GetUserInfoRes getMyInfo(Long userId) {
+    public GetUserInfoRes getMyInfo(UserDetailsImpl userDetails) {
+        Long userId = userDetails.getUser().getUserId();
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
 
