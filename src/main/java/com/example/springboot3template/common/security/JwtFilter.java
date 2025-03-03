@@ -9,16 +9,14 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import javax.crypto.SecretKey;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,32 +26,32 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtFilter implements Filter {
-
-    @Value("${jwt.secret.key}") // Base64 Encode 한 SecretKey
-    private String secretKey;
+@Slf4j
+public class JwtFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
 
+    @Value("${jwt.secret.key}")
+    private String secretKey;
+
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest req = (HttpServletRequest) request;
-        HttpServletResponse res = (HttpServletResponse) response;
-        String url = req.getRequestURI();
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
+        throws ServletException, IOException {
+
+        String url = request.getRequestURI();
 
         if (isAuthorizationPassRequest(url)) {
-            // 회원가입, 로그인 관련 API 는 인증 필요없이 요청 진행
-            chain.doFilter(req, res); // 다음 Filter 로 이동
+            log.info("인증 제외 API 요청: {}", url);
+            filterChain.doFilter(request, response);
             return;
         }
 
-        // 나머지 API 요청은 인증 처리 진행
-        // 토큰 확인
-        String token = getTokenFromRequest(req);
+        // 토큰 확인 및 검증 로직 유지
+        String token = getTokenFromRequest(request);
         log.info("요청에서 추출된 토큰: {}", token);
 
         if (StringUtils.hasText(token)) {
@@ -63,13 +61,8 @@ public class JwtFilter implements Filter {
                 throw new IllegalArgumentException("Token Error");
             }
 
-            // JWT에서 사용자 정보 추출
             Claims claims = getUserInfoFromToken(token, key);
             String username = claims.getSubject();
-            String role = claims.get("auth", String.class);
-
-            log.info("JWT에서 추출된 사용자 정보 - username: {}, role: {}", username, role);
-
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -79,29 +72,8 @@ public class JwtFilter implements Filter {
         } else {
             log.warn("토큰이 요청에 포함되지 않았습니다.");
         }
-        chain.doFilter(request, response);
-    }
 
-    // HttpServletRequest 에서 Cookie Value : JWT 가져오기
-    public String getTokenFromRequest(HttpServletRequest req) {
-        Cookie[] cookies = req.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                log.info("쿠키 이름: {}, 쿠키 값: {}", cookie.getName(), cookie.getValue());
-                if (cookie.getName().equals(AUTHORIZATION_HEADER)) {
-                    String cookieValue = cookie.getValue();
-                    if (cookieValue != null) {
-                        // 그냥 토큰을 그대로 사용합니다. URLDecoder.decode는 필요없음
-                        log.info("디코딩된 토큰: {}", cookieValue);  // 디코딩 없이 그대로 사용
-                        return cookieValue;
-                    } else {
-                        log.error("쿠키 값이 null 입니다.");
-                    }
-                }
-            }
-        }
-        log.warn("Authorization 쿠키가 요청에 포함되지 않았습니다.");
-        return null;
+        filterChain.doFilter(request, response);
     }
 
     // 토큰 검증
@@ -126,6 +98,28 @@ public class JwtFilter implements Filter {
         return false;
     }
 
+    // HttpServletRequest 에서 Cookie Value : JWT 가져오기
+    public String getTokenFromRequest(HttpServletRequest req) {
+        Cookie[] cookies = req.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                log.info("쿠키 이름: {}, 쿠키 값: {}", cookie.getName(), cookie.getValue());
+                if (cookie.getName().equals(AUTHORIZATION_HEADER)) {
+                    String cookieValue = cookie.getValue();
+                    if (cookieValue != null) {
+                        // 그냥 토큰을 그대로 사용합니다. URLDecoder.decode는 필요없음
+                        log.info("디코딩된 토큰: {}", cookieValue);  // 디코딩 없이 그대로 사용
+                        return cookieValue;
+                    } else {
+                        log.error("쿠키 값이 null 입니다.");
+                    }
+                }
+            }
+        }
+        log.warn("Authorization 쿠키가 요청에 포함되지 않았습니다.");
+        return null;
+    }
+
     // 토큰에서 사용자 정보 가져오기
     public Claims getUserInfoFromToken(String token, SecretKey key) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
@@ -142,4 +136,6 @@ public class JwtFilter implements Filter {
         }
         return Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretKey));
     }
+
 }
+
