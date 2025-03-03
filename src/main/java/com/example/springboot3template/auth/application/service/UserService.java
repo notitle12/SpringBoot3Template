@@ -4,6 +4,8 @@ import com.example.springboot3template.auth.application.dto.res.GetUserInfoRes;
 import com.example.springboot3template.auth.domain.entity.User;
 import com.example.springboot3template.auth.infrastructure.repository.UserRepository;
 import com.example.springboot3template.auth.infrastructure.security.UserDetailsImpl;
+import com.example.springboot3template.common.globalException.CustomException;
+import com.example.springboot3template.common.globalException.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +22,7 @@ public class UserService {
         Long userId = userDetails.getUser().getUserId();
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         GetUserInfoRes getMyInfo = new GetUserInfoRes();
         getMyInfo.setUsername(user.getUsername());
@@ -31,7 +33,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public GetUserInfoRes getUserInfo(Long userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("해당 사용자를 찾을 수 없습니다."));
+            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         GetUserInfoRes userInfo = new GetUserInfoRes();
         userInfo.setUsername(user.getUsername());

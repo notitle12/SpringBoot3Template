@@ -5,10 +5,14 @@ import com.example.springboot3template.auth.application.dto.req.SignUpReq;
 import com.example.springboot3template.auth.domain.entity.User;
 import com.example.springboot3template.auth.domain.entity.UserRoleEnum;
 import com.example.springboot3template.auth.infrastructure.repository.UserRepository;
+import com.example.springboot3template.common.globalException.CustomException;
+import com.example.springboot3template.common.globalException.ErrorCode;
 import com.example.springboot3template.common.security.JwtProvider;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,14 +38,14 @@ public class AuthService {
         // 회원 중복 확인
         Optional<User> checkUsername = userRepository.findByUsername(username);
         if (checkUsername.isPresent()) {
-            throw new IllegalArgumentException("중복된 사용자가 존재합니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
         }
 
         if(role == null) {
             role = UserRoleEnum.USER;
         } else if(role == UserRoleEnum.ADMIN) {
             if(req.getAdminToken() == null || !req.getAdminToken().equals(ADMIN_TOKEN)) {
-                throw new IllegalArgumentException("유효한 관리자 토큰이 필요합니다.");
+                throw new CustomException(ErrorCode.INVALID_TOKEN);
             }
         }
 
@@ -63,12 +67,12 @@ public class AuthService {
 
         // 사용자 확인
         User user = userRepository.findByUsername(username).orElseThrow(
-            () -> new IllegalArgumentException("등록된 사용자가 없습니다.")
+            () -> new CustomException(ErrorCode.LOGIN_FAIL_USERNAME)
         );
 
         // 비밀번호 확인
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.LOGIN_FAIL_PASSWORD);
         }
 
         // JWT 생성 및 쿠키에 저장 후 Response 객체에 추가

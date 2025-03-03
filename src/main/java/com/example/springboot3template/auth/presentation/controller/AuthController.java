@@ -21,14 +21,14 @@ public class AuthController {
 
     // 회원가입
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody @Valid SignUpReq req) {
+    public ResponseEntity<?> signUp(@Valid @RequestBody SignUpReq req) {
         authService.signUp(req);
         return ResponseEntity.ok().build();
     }
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Valid LoginReq req, HttpServletResponse res) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginReq req, HttpServletResponse res) {
         authService.login(req, res);
         return ResponseEntity.ok().build();
     }
