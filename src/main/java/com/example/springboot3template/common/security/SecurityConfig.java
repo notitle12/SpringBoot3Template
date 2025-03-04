@@ -21,6 +21,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+
     private final JwtFilter jwtFilter;
 
     @Bean
@@ -52,6 +54,11 @@ public class SecurityConfig {
                 // HTML 페이지 접근을 인증 없이 허용
 //                .requestMatchers("/").permitAll()
                 .anyRequest().authenticated() // 그 외 모든 요청 인증처리
+        );
+
+        // 예외 처리 핸들러 설정
+        http.exceptionHandling(exceptionHandling -> exceptionHandling
+            .authenticationEntryPoint(authenticationEntryPoint) // 401 처리
         );
 
         // 필터 추가 (JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가)
