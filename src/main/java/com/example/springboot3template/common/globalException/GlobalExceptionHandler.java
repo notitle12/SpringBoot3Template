@@ -21,10 +21,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorRes> handleIllegalArgumentException(IllegalArgumentException ex) {
         ErrorRes response = new ErrorRes(
             4000,
-            ex.getMessage(),
-            HttpStatus.BAD_REQUEST,
-            HttpStatus.BAD_REQUEST.value(),
-            LocalDateTime.now()
+            ex.getMessage()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
@@ -34,10 +31,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorRes> handleAccessDeniedException(AccessDeniedException ex) {
         ErrorRes response = new ErrorRes(
             4030,
-            "Forbidden: " + ex.getMessage(),
-            HttpStatus.FORBIDDEN,
-            HttpStatus.FORBIDDEN.value(),
-            LocalDateTime.now()
+            "Forbidden: " + ex.getMessage()
         );
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
@@ -47,10 +41,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorRes> handleGeneralException(Exception ex) {
         ErrorRes response = new ErrorRes(
             9999,
-            ex.getMessage(),
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            LocalDateTime.now()
+            ex.getMessage()
         );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }

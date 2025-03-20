@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -25,10 +23,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         // 동적으로 timestamp를 추가하여 ErrorRes 객체 생성
         ErrorRes errorResponse = new ErrorRes(
             4010,
-            "로그인이 필요합니다.",
-            HttpStatus.UNAUTHORIZED,
-            401,
-            LocalDateTime.now() // 현재 시간 추가
+            "로그인이 필요합니다."
         );
 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
