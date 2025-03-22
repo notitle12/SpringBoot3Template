@@ -14,7 +14,8 @@ public enum ErrorCode {
     LOGIN_FAIL_USERNAME(1002, "존재하지 않는 아이디 입니다.", HttpStatus.BAD_REQUEST), // 400
     LOGIN_FAIL_PASSWORD(1003, "비밀번호를 틀렸습니다.", HttpStatus.BAD_REQUEST), // 400
     USER_NOT_FOUND(1004, "사용자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND), // 404
-    UNAUTHORIZED_ACCESS(1005, "권한이 없습니다.", HttpStatus.FORBIDDEN); //403
+    UNAUTHORIZED_ACCESS(1005, "권한이 없습니다.", HttpStatus.FORBIDDEN), // 403
+    UNAUTHORIZED(1006, "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED); // 401
 
     private final int code;
     private final String message;

@@ -73,9 +73,17 @@ public class AuthService {
             throw new CustomException(ErrorCode.LOGIN_FAIL_PASSWORD);
         }
 
+        // 사용자 권한 가져오기
+        UserRoleEnum role = user.getRole();
+
+        // JWT 토큰 생성
+        String accessToken = jwtProvider.createAcessToken(username, role);
+        // AccessToken 헤더에 추가
+        jwtProvider.addAccessTokenToHeader(accessToken, res);
+
         // JWT 생성 및 쿠키에 저장 후 Response 객체에 추가
-        String token = jwtProvider.createToken(user.getUsername(), user.getRole());
-        jwtProvider.addJwtToCookie(token, res);
+        String token = jwtProvider.createRefreshToken(user.getUsername());
+        jwtProvider.addRefreshTokenToCookie(token, res);
     }
 
 }
