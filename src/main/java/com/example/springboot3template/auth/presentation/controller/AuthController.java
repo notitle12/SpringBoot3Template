@@ -2,7 +2,9 @@ package com.example.springboot3template.auth.presentation.controller;
 
 import com.example.springboot3template.auth.application.dto.req.LoginReq;
 import com.example.springboot3template.auth.application.dto.req.SignUpReq;
+import com.example.springboot3template.auth.application.dto.res.TokenRes;
 import com.example.springboot3template.auth.application.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +30,16 @@ public class AuthController {
 
     // 로그인
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginReq req, HttpServletResponse res) {
-        authService.login(req, res);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<TokenRes> login(@Valid @RequestBody LoginReq req, HttpServletResponse res) {
+        TokenRes tokenRes = authService.login(req, res);
+        return ResponseEntity.ok().body(tokenRes);
+    }
+
+    // 엑세스 토큰 재발급
+    @PostMapping("/reissue")
+    public ResponseEntity<TokenRes> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {
+        TokenRes tokenRes = authService.reissueAccessToken(request, response);
+        return ResponseEntity.ok().body(tokenRes);
     }
 
 }

@@ -50,7 +50,7 @@ public class SecurityConfig {
             authorizeHttpRequests
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll() // resources 접근 허용 설정
                 // api 요청 허가
-                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/sign-up").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/api/v1/auth/sign-up").permitAll()
                 // HTML 페이지 접근을 인증 없이 허용
 //                .requestMatchers("/").permitAll()
                 .anyRequest().authenticated() // 그 외 모든 요청 인증처리

@@ -10,6 +10,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import java.security.Key;
 import java.util.Date;
+import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,7 +28,8 @@ public class JwtProvider {
     // Token 식별자
     public static final String BEARER_PREFIX = "Bearer ";
     // 토큰 만료시간
-    private final long ACCESS_TOKEN_TIME = 30 * 60 * 1000L; // 30분
+//    private final long ACCESS_TOKEN_TIME = 5 * 60 * 1000L; // 5분
+    private final long ACCESS_TOKEN_TIME = 1 * 60 * 1000L; // 5분
     private final long REFRESH_TOKEN_TIME = 14 * 24 * 60 * 60 * 1000L; // 2주
 
 
@@ -92,7 +94,7 @@ public class JwtProvider {
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
-        cookie.setMaxAge(3600 * 1000); // 60분
+        cookie.setMaxAge(14 * 24 * 60 * 60); // 2주
 
         // Response 객체에 Cookie 추가
         res.addCookie(cookie);
@@ -106,6 +108,10 @@ public class JwtProvider {
         }
         log.error("Not Found Token");
         throw new NullPointerException("Not Found Token");
+    }
+
+    public SecretKey getSecretKey() {
+        return (SecretKey) this.key;
     }
 
 }

@@ -2,9 +2,6 @@ package com.example.springboot3template.common.security;
 
 import static com.example.springboot3template.common.security.JwtProvider.AUTHORIZATION_HEADER;
 import static com.example.springboot3template.common.security.JwtProvider.REFRESH_TOKEN_COOKIE;
-import com.example.springboot3template.auth.domain.entity.User;
-import com.example.springboot3template.auth.domain.entity.UserRoleEnum;
-import com.example.springboot3template.auth.infrastructure.repository.UserRepository;
 import com.example.springboot3template.common.globalException.CustomException;
 import com.example.springboot3template.common.globalException.ErrorCode;
 import io.jsonwebtoken.Claims;
@@ -27,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -41,10 +37,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
-
-    private final UserRepository userRepository;
-
-    private final JwtProvider jwtProvider;
 
     @Value("${jwt.secret.key}")
     private String secretKey;
@@ -74,18 +66,6 @@ public class JwtFilter extends OncePerRequestFilter {
             authenticateUser(accessToken, key);
             log.info("AccessToken 인증 성공");
         }
-        // 2. AccessToken이 없거나 유효하지 않으면 → RefreshToken으로 재발급 시도
-        else {
-            log.warn("AccessToken이 없거나 만료됨");
-
-            boolean reissued = reissueAccessToken(req, res, key);
-
-            if (!reissued) {
-                log.error("RefreshToken으로 AccessToken 재발급 실패");
-                throw new AuthenticationException("로그인이 필요합니다.") {};
-            }
-            log.info("RefreshToken으로 AccessToken 재발급 성공 및 인증 완료");
-        }
 
         filterChain.doFilter(req, res);
     }
@@ -104,14 +84,17 @@ public class JwtFilter extends OncePerRequestFilter {
 
         } catch (SecurityException | MalformedJwtException | SignatureException e) {
             log.error("유효하지 않은 JWT 서명 또는 포맷 오류: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         } catch (ExpiredJwtException e) {
             log.error("ExpiredJwtException - 만료된 토큰: {}", e.getMessage());
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
         } catch (UnsupportedJwtException e) {
             log.error("UnsupportedJwtException - 지원하지 않는 토큰: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         } catch (IllegalArgumentException e) {
             log.error("IllegalArgumentException - 잘못된 인자: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
-        return false;
     }
 
     // 헤더에서 어세스 토큰 가져오기
@@ -153,55 +136,18 @@ public class JwtFilter extends OncePerRequestFilter {
 
     // 인증 통과 url
     private boolean isAuthorizationPassRequest(String path) {
-        return path.startsWith("/api/v1/auth/login") || path.startsWith("/api/v1/auth/sign-up");
+        return path.startsWith("/api/v1/auth/") || path.startsWith("/api/v1/auth/sign-up");
     }
 
+    // 디코딩 된 시크릿 키 전달
     private SecretKey getSecretKey() {
         if (secretKey == null || secretKey.isEmpty()) {
             throw new IllegalStateException("JwtFilter에 secretKey가 null입니다.");
         }
-        return Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretKey));
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
     }
 
-    // RefreshToken으로 AccessToken 재발급 시도
-    private boolean reissueAccessToken(HttpServletRequest req, HttpServletResponse res, SecretKey key) {
-        String refreshToken = getRefreshTokenFromCookie(req);
-
-        if (!StringUtils.hasText(refreshToken) || !validateToken(refreshToken, key)) {
-            return false;
-        }
-
-        // RefreshToken에서 사용자 정보 추출
-        Claims claims = getUserInfoFromToken(refreshToken, key);
-        String username = claims.getSubject();
-
-        // 유저 정보 조회 (DB에서)
-
-        User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-        UserRoleEnum role = user.getRole();
-
-        // 사용자 정보 조회 (DB 조회 or UserDetailsService)
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        if (userDetails == null) {
-            log.warn("사용자를 찾을 수 없습니다. username={}", username);
-            return false;
-        }
-
-        // 새로운 AccessToken 생성
-        String newAccessToken = jwtProvider.createAcessToken(username, role);
-
-        // 응답 헤더에 새 AccessToken 추가
-        jwtProvider.addAccessTokenToHeader(newAccessToken, res);
-
-        // 인증 처리
-        authenticateUser(newAccessToken, key);
-
-        log.info("AccessToken 재발급 및 인증 완료");
-        return true;
-    }
-
+    // 인증 객체 생성
     private void authenticateUser(String token, SecretKey key) {
         Claims claims = getUserInfoFromToken(token, key);
         String username = claims.getSubject();
@@ -219,4 +165,43 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
 }
+
+// RefreshToken으로 AccessToken 재발급 시도
+//    private boolean reissueAccessToken(HttpServletRequest req, HttpServletResponse res, SecretKey key) {
+//        String refreshToken = getRefreshTokenFromCookie(req);
+//
+//        if (!StringUtils.hasText(refreshToken) || !validateToken(refreshToken, key)) {
+//            return false;
+//        }
+//
+//        // RefreshToken에서 사용자 정보 추출
+//        Claims claims = getUserInfoFromToken(refreshToken, key);
+//        String username = claims.getSubject();
+//
+//        // 유저 정보 조회 (DB에서)
+//
+//        User user = userRepository.findByUsername(username)
+//            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+//
+//        UserRoleEnum role = user.getRole();
+//
+//        // 사용자 정보 조회 (DB 조회 or UserDetailsService)
+//        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+//        if (userDetails == null) {
+//            log.warn("사용자를 찾을 수 없습니다. username={}", username);
+//            return false;
+//        }
+//
+//        // 새로운 AccessToken 생성
+//        String newAccessToken = jwtProvider.createAcessToken(username, role);
+//
+//        // 응답 헤더에 새 AccessToken 추가
+//        jwtProvider.addAccessTokenToHeader(newAccessToken, res);
+//
+//        // 인증 처리
+//        authenticateUser(newAccessToken, key);
+//
+//        log.info("AccessToken 재발급 및 인증 완료");
+//        return true;
+//    }
 
