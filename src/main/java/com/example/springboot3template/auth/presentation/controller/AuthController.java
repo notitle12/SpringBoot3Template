@@ -35,6 +35,13 @@ public class AuthController {
         return ResponseEntity.ok().body(tokenRes);
     }
 
+    // 로그아웃
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest req) {
+        authService.logout(req);
+        return ResponseEntity.ok().build();
+    }
+
     // 엑세스 토큰 재발급
     @PostMapping("/reissue")
     public ResponseEntity<TokenRes> reissueAccessToken(HttpServletRequest request, HttpServletResponse response) {

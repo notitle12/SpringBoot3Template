@@ -1,6 +1,7 @@
 package com.example.springboot3template.common.security;
 
 import com.example.springboot3template.auth.domain.entity.UserRoleEnum;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -112,6 +113,25 @@ public class JwtProvider {
 
     public SecretKey getSecretKey() {
         return (SecretKey) this.key;
+    }
+
+    public long getExpiration(String token) {
+        Date expiration = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    public String getUsernameFromToken(String token) {
+        Claims claims = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
+        return claims.getSubject();
     }
 
 }

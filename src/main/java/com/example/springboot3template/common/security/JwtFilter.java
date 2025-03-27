@@ -2,6 +2,7 @@ package com.example.springboot3template.common.security;
 
 import static com.example.springboot3template.common.security.JwtProvider.AUTHORIZATION_HEADER;
 import static com.example.springboot3template.common.security.JwtProvider.REFRESH_TOKEN_COOKIE;
+import com.example.springboot3template.auth.application.service.RefreshTokenService;
 import com.example.springboot3template.common.globalException.CustomException;
 import com.example.springboot3template.common.globalException.ErrorCode;
 import io.jsonwebtoken.Claims;
@@ -23,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,6 +39,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final UserDetailsService userDetailsService;
+
+    private final RefreshTokenService refreshTokenService;
 
     @Value("${jwt.secret.key}")
     private String secretKey;
@@ -57,12 +61,23 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // 헤더에서 어세스 토큰 확인
         String accessToken = getAccessTokenFromHeader(req);
-        log.info("요청에서 추출된 토큰: {}", accessToken);
+        log.info("요청에서 추출된 토큰: {}", accessToken); // 개발용
+//        log.info("토큰 추출 완료");
 
         SecretKey key = getSecretKey();
 
         // 1. AccessToken 검증
         if (StringUtils.hasText(accessToken) && validateToken(accessToken, key)) {
+
+//            if (isBlacklisted(accessToken)) {
+//                log.warn("AccessToken이 블랙리스트에 포함되어 있음");
+//                throw new CustomException(ErrorCode.INVALID_TOKEN);
+//            }
+            if (refreshTokenService.isBlackListed(accessToken)) {
+                log.warn("블랙리스트 토큰입니다.");
+                throw new CustomException(ErrorCode.INVALID_TOKEN);
+            }
+
             authenticateUser(accessToken, key);
             log.info("AccessToken 인증 성공");
         }
@@ -107,26 +122,30 @@ public class JwtFilter extends OncePerRequestFilter {
         return null;
     }
 
-    // HttpServletRequest 에서 Cookie Value : JWT 가져오기
     public String getRefreshTokenFromCookie(HttpServletRequest req) {
         Cookie[] cookies = req.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                log.info("쿠키 이름: {}, 쿠키 값: {}", cookie.getName(), cookie.getValue());
-                if (cookie.getName().equals(REFRESH_TOKEN_COOKIE)) {
-                    String cookieValue = cookie.getValue();
-                    if (cookieValue != null) {
-                        // 그냥 토큰을 그대로 사용합니다. URLDecoder.decode는 필요없음
-                        log.info("디코딩된 토큰: {}", cookieValue);  // 디코딩 없이 그대로 사용
-                        return cookieValue;
-                    } else {
-                        log.error("쿠키 값이 null 입니다.");
-                    }
+        if (cookies == null || cookies.length == 0) {
+            log.warn("요청에 쿠키가 포함되어 있지 않습니다.");
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        for (Cookie cookie : cookies) {
+            log.info("쿠키 이름: {}, 쿠키 값: {}", cookie.getName(), cookie.getValue()); // 개발용
+//            log.info("쿠키 이름: {}", cookie.getName());
+            if (REFRESH_TOKEN_COOKIE.equals(cookie.getName())) {
+                String cookieValue = cookie.getValue();
+                if (StringUtils.hasText(cookieValue)) {
+                    log.info("디코딩된 토큰: {}", cookieValue); // 개발용
+//                    log.info("토큰 디코딩 완료");
+                    return cookieValue;
+                } else {
+                    log.error("RefreshToken 쿠키는 존재하지만 값이 비어있거나 null입니다.");
+                    throw new CustomException(ErrorCode.UNAUTHORIZED);
                 }
             }
         }
-        log.warn("Authorization 쿠키가 요청에 포함되지 않았습니다.");
-        return null;
+        log.warn("RefreshToken 쿠키가 요청에 포함되지 않았습니다.");
+        throw new CustomException(ErrorCode.UNAUTHORIZED);
     }
 
     // 토큰에서 사용자 정보 가져오기
@@ -161,47 +180,10 @@ public class JwtFilter extends OncePerRequestFilter {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        log.info("인증 완료: {}", authentication);
+        log.info("인증 완료: {}", authentication); // 개발용
+//        log.info("인증 완료");
     }
 
 }
 
-// RefreshToken으로 AccessToken 재발급 시도
-//    private boolean reissueAccessToken(HttpServletRequest req, HttpServletResponse res, SecretKey key) {
-//        String refreshToken = getRefreshTokenFromCookie(req);
-//
-//        if (!StringUtils.hasText(refreshToken) || !validateToken(refreshToken, key)) {
-//            return false;
-//        }
-//
-//        // RefreshToken에서 사용자 정보 추출
-//        Claims claims = getUserInfoFromToken(refreshToken, key);
-//        String username = claims.getSubject();
-//
-//        // 유저 정보 조회 (DB에서)
-//
-//        User user = userRepository.findByUsername(username)
-//            .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-//
-//        UserRoleEnum role = user.getRole();
-//
-//        // 사용자 정보 조회 (DB 조회 or UserDetailsService)
-//        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-//        if (userDetails == null) {
-//            log.warn("사용자를 찾을 수 없습니다. username={}", username);
-//            return false;
-//        }
-//
-//        // 새로운 AccessToken 생성
-//        String newAccessToken = jwtProvider.createAcessToken(username, role);
-//
-//        // 응답 헤더에 새 AccessToken 추가
-//        jwtProvider.addAccessTokenToHeader(newAccessToken, res);
-//
-//        // 인증 처리
-//        authenticateUser(newAccessToken, key);
-//
-//        log.info("AccessToken 재발급 및 인증 완료");
-//        return true;
-//    }
 
